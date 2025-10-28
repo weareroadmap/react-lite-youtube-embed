@@ -1,5 +1,5 @@
 import * as React from "react";
-export type imgResolution = "default" | "mqdefault" | "hqdefault" | "sddefault" | "maxresdefault";
+import { imgResolution } from "./useYoutubeThumbnail";
 export interface LiteYouTubeProps {
     announce?: string;
     id: string;
@@ -22,6 +22,7 @@ export interface LiteYouTubeProps {
     wrapperClass?: string;
     onIframeAdded?: () => void;
     muted?: boolean;
+    autoplay?: boolean;
     thumbnail?: string;
     rel?: string;
     containerElement?: keyof React.JSX.IntrinsicElements;

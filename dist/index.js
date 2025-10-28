@@ -1,6 +1,6 @@
 /**
-* react-lite-youtube-embed v2.5.0
-*  https://github.com/ibrahimcesar/react-lite-youtube-embed.git
+* react-lite-youtube-embed v2.5.5
+*  git+https://github.com/ibrahimcesar/react-lite-youtube-embed.git
 *
 *  Copyright (c) Ibrahim Cesar < email@ibrahimcesar.com > and project contributors.
 *
@@ -59,6 +59,35 @@ var __assign = function() {
     return __assign.apply(this, arguments);
 };
 
+var expectedWidths = {
+    default: 120,
+    mqdefault: 320,
+    hqdefault: 480,
+    sddefault: 640,
+    maxresdefault: 1280,
+};
+var useYoutubeThumbnail = function (videoId, vi, format, imageRes) {
+    if (imageRes === void 0) { imageRes = "maxresdefault"; }
+    var _a = React.useState(""), url = _a[0], setUrl = _a[1];
+    React.useEffect(function () {
+        var testUrl = "https://img.youtube.com/".concat(vi, "/").concat(videoId, "/").concat(imageRes, ".").concat(format);
+        var fallbackUrl = "https://img.youtube.com/".concat(vi, "/").concat(videoId, "/hqdefault.").concat(format);
+        var expectedWidth = expectedWidths[imageRes];
+        var img = new Image();
+        img.onload = function () {
+            if (img.width < expectedWidth) {
+                setUrl(fallbackUrl);
+            }
+            else {
+                setUrl(testUrl);
+            }
+        };
+        img.onerror = function () { return setUrl(fallbackUrl); };
+        img.src = testUrl;
+    }, [videoId]);
+    return url;
+};
+
 function LiteYouTubeEmbedComponent(props, ref) {
     var _a = React__namespace.useState(false), preconnected = _a[0], setPreconnected = _a[1];
     var _b = React__namespace.useState(props.alwaysLoadIframe || false), iframe = _b[0], setIframe = _b[1];
@@ -69,8 +98,18 @@ function LiteYouTubeEmbedComponent(props, ref) {
     var videoTitle = props.title;
     var posterImp = props.poster || "hqdefault";
     var announceWatch = props.announce || "Watch";
+    var shouldAddAutoplayParam = props.alwaysLoadIframe
+        ? props.autoplay && props.muted
+        : true; // When the iframe is not loaded immediately, the video should play as soon as its loaded (which happens when the button is clicked)
     // Iframe Parameters
-    var iframeParams = new URLSearchParams(__assign(__assign(__assign(__assign({}, (props.muted ? { mute: "1" } : {})), (props.alwaysLoadIframe ? {} : { autoplay: "1", state: "1" })), (props.enableJsApi ? { enablejsapi: "1" } : {})), (props.playlist ? { list: videoId } : {})));
+    var iframeParams = new URLSearchParams(__assign(__assign(__assign(__assign({}, (props.muted ? { mute: "1" } : {})), (shouldAddAutoplayParam ? { autoplay: "1" } : {})), (props.enableJsApi ? { enablejsapi: "1" } : {})), (props.playlist ? { list: videoId } : {})));
+    // parse props.params into individual search parameters and append them to iframeParams
+    if (props.params) {
+        var additionalParams = new URLSearchParams(props.params.startsWith("&") ? props.params.slice(1) : props.params);
+        additionalParams.forEach(function (value, key) {
+            iframeParams.append(key, value);
+        });
+    }
     var ytUrl = props.noCookie
         ? "https://www.youtube-nocookie.com"
         : "https://www.youtube.com";
@@ -80,12 +119,15 @@ function LiteYouTubeEmbedComponent(props, ref) {
     var iframeSrc = !props.playlist
         ? "".concat(ytUrl, "/embed/").concat(videoId, "?").concat(iframeParams.toString())
         : "".concat(ytUrl, "/embed/videoseries?").concat(iframeParams.toString());
+    var useDynamicThumbnail = !props.thumbnail && !props.playlist && posterImp === "maxresdefault";
     var format = props.webp ? "webp" : "jpg";
     var vi = props.webp ? "vi_webp" : "vi";
+    var dynamicThumbnailUrl = useDynamicThumbnail
+        ? useYoutubeThumbnail(props.id, vi, format, posterImp)
+        : null;
     var posterUrl = props.thumbnail ||
-        (!props.playlist
-            ? "https://i.ytimg.com/".concat(vi, "/").concat(videoId, "/").concat(posterImp, ".").concat(format)
-            : "https://i.ytimg.com/".concat(vi, "/").concat(videoPlaylistCoverId, "/").concat(posterImp, ".").concat(format));
+        dynamicThumbnailUrl ||
+        "https://i.ytimg.com/".concat(vi, "/").concat(props.playlist ? videoPlaylistCoverId : videoId, "/").concat(posterImp, ".").concat(format);
     var activatedClassImp = props.activatedClass || "lyt-activated";
     var adNetworkImp = props.adNetwork || false;
     var aspectHeight = props.aspectHeight || 9;
@@ -124,7 +166,7 @@ function LiteYouTubeEmbedComponent(props, ref) {
                 "--aspect-ratio": "".concat((aspectHeight / aspectWidth) * 100, "%"),
             }), style) },
             React__namespace.createElement("button", { type: "button", className: playerClassImp, "aria-label": "".concat(announceWatch, " ").concat(videoTitle) }),
-            iframe && (React__namespace.createElement("iframe", { ref: ref, className: iframeClassImp, title: videoTitle, width: "560", height: "315", frameBorder: "0", allow: "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, src: iframeSrc })))));
+            iframe && (React__namespace.createElement("iframe", { ref: ref, className: iframeClassImp, title: videoTitle, referrerPolicy: "strict-origin-when-cross-origin", width: "560", height: "315", frameBorder: "0", allow: "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, src: iframeSrc })))));
 }
 var index = React__namespace.forwardRef(LiteYouTubeEmbedComponent);
 
