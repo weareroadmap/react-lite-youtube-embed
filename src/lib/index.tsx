@@ -167,6 +167,7 @@ function LiteYouTubeEmbedComponent(
             ref={ref}
             className={iframeClassImp}
             title={videoTitle}
+            referrerPolicy="strict-origin-when-cross-origin"
             width="560"
             height="315"
             frameBorder="0"
